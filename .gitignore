@@ -1,0 +1,9 @@
+.env*
+!.env.example
+*.log
+data/
+logs/
+uploads/
+node_modules/
+tools/qa-*-profile/
+项目进度与部署记录.md

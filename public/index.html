@@ -1,0 +1,139 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="theme-color" content="#f5f4ef">
+    <title>小印 · 对话</title>
+    <link rel="stylesheet" href="/styles.css">
+  </head>
+  <body>
+    <div class="workspace">
+      <aside class="sidebar" id="sidebar" aria-label="历史对话">
+        <div class="sidebar-heading">
+          <h2>对话</h2>
+          <button id="close-sidebar" class="sidebar-close" type="button">关闭</button>
+        </div>
+        <button id="new-conversation" class="new-conversation" type="button">＋ 新对话</button>
+        <div class="history-heading">最近对话</div>
+        <nav class="conversation-list" id="conversation-list" aria-label="历史对话列表"></nav>
+      </aside>
+      <button id="sidebar-backdrop" class="sidebar-backdrop" type="button" aria-label="关闭历史对话" hidden></button>
+
+      <main class="app-shell">
+        <header class="topbar">
+          <div class="identity">
+            <button id="open-sidebar" class="sidebar-open" type="button" aria-label="打开历史对话" aria-expanded="false">☰</button>
+            <span class="identity-mark" aria-hidden="true">印</span>
+            <div>
+              <h1>小印</h1>
+              <p id="connection-state">本机对话</p>
+            </div>
+          </div>
+          <div class="topbar-right">
+            <span class="model-label" id="model-label">DeepSeek API</span>
+            <button id="open-stats" class="stats-trigger" type="button" aria-label="查看上下文与摘要" aria-haspopup="dialog">
+              <span class="context-ring" id="context-ring"><span id="context-percent">—</span></span>
+            </button>
+          </div>
+        </header>
+
+        <section class="conversation" aria-label="对话">
+          <div class="welcome" id="welcome">
+            <span class="welcome-rule" aria-hidden="true"></span>
+            <h2>你好。</h2>
+            <p>从一句话开始。</p>
+          </div>
+          <div class="messages" id="messages" aria-live="polite"></div>
+          <div class="notice" id="notice" role="status" hidden></div>
+        </section>
+
+        <form class="composer" id="composer">
+          <label class="visually-hidden" for="message-input">发送消息</label>
+          <textarea id="message-input" rows="1" maxlength="4000" placeholder="写一条消息…" required></textarea>
+          <button id="send-button" type="submit" aria-label="发送消息" title="发送消息">
+            <span aria-hidden="true">↑</span>
+          </button>
+        </form>
+        <footer class="footnote">对话保存在本机</footer>
+      </main>
+    </div>
+
+    <dialog id="stats-dialog" aria-labelledby="stats-heading">
+      <div class="stats-heading">
+        <h2 id="stats-heading">上下文</h2>
+        <button id="close-stats" type="button">关闭</button>
+      </div>
+      <div class="context-tabs" role="tablist" aria-label="上下文面板">
+        <button id="tab-usage" type="button" role="tab" aria-controls="usage-panel" aria-selected="true">上下文与用量</button>
+        <button id="tab-summary" type="button" role="tab" aria-controls="summary-panel" aria-selected="false">摘要管理</button>
+      </div>
+      <section id="usage-panel" role="tabpanel" aria-labelledby="tab-usage">
+      <p class="stats-caption" id="stats-coverage">尚无已记录的模型用量。</p>
+      <dl class="stats-list">
+        <div><dt>当前上下文占比（估算）</dt><dd id="stats-context-percent">—</dd></div>
+        <div><dt>当前上下文用量（估算）</dt><dd id="stats-context-used">—</dd></div>
+        <div><dt>本窗口目标容量</dt><dd id="stats-context-limit">—</dd></div>
+        <div><dt>累计输入 token（含摘要）</dt><dd id="stats-input">—</dd></div>
+        <div><dt>累计输出 token（含摘要）</dt><dd id="stats-output">—</dd></div>
+        <div><dt>累计缓存命中 token（含摘要）</dt><dd id="stats-cached">—</dd></div>
+        <div><dt>累计缓存命中率</dt><dd id="stats-cache-rate">—</dd></div>
+        <div><dt>其中摘要请求输入／输出</dt><dd id="stats-summary-usage">—</dd></div>
+      </dl>
+      <form id="usage-settings" class="settings-form">
+        <label for="summary-threshold">自动压缩阈值（0.1～0.9）</label>
+        <input id="summary-threshold" type="number" min="0.1" max="0.9" step="0.01" value="0.7" required>
+        <label for="context-max">本窗口上下文最大用量（k token）</label>
+        <input id="context-max" type="number" min="1" step="0.001" placeholder="跟随模型容量">
+        <p class="stats-note" id="context-max-help">留空时使用模型容量。回复完成后达到阈值会自动压缩；本轮可能短暂超过目标容量，模型自身上限仍有效。</p>
+        <button type="submit">保存设置</button>
+        <p id="usage-settings-notice" class="summary-notice" role="status" hidden></p>
+      </form>
+      <p class="stats-note" id="stats-context-note"></p>
+      </section>
+      <section id="summary-panel" role="tabpanel" aria-labelledby="tab-summary" hidden>
+        <p id="summary-status" class="stats-caption"></p>
+        <p id="summary-last-compression" class="stats-caption"></p>
+        <div class="summary-actions">
+          <button id="generate-summary" type="button">立即压缩</button>
+        </div>
+        <div id="active-summary" class="summary-current" hidden>
+          <h3>当前摘要</h3>
+          <p id="summary-meta" class="stats-caption"></p>
+          <pre id="summary-text"></pre>
+          <div class="summary-actions">
+            <button id="edit-summary" type="button">编辑摘要</button>
+            <button id="undo-summary" type="button">撤销本次压缩</button>
+          </div>
+          <form id="summary-editor" hidden>
+            <label for="summary-edit-text">替换当前摘要</label>
+            <textarea id="summary-edit-text" maxlength="20000" rows="9" required></textarea>
+            <div class="summary-actions">
+              <button type="submit">保存为新版本</button>
+              <button id="cancel-summary-edit" type="button">取消</button>
+            </div>
+          </form>
+        </div>
+        <h3>摘要补充要求</h3>
+        <form id="summary-settings" class="settings-form">
+          <label for="summary-instructions">本对话摘要补充要求</label>
+          <textarea id="summary-instructions" maxlength="4000" rows="4" placeholder="例如：优先保留文件名、测试结果和是否部署。"></textarea>
+          <p class="stats-note">只影响之后生成的摘要；编辑现有摘要请使用上方按钮。</p>
+          <button type="submit">保存设置</button>
+        </form>
+        <h3>版本记录</h3>
+        <div id="summary-versions" class="summary-versions"></div>
+        <p id="summary-notice" class="summary-notice" role="status" hidden></p>
+      </section>
+    </dialog>
+    <dialog id="undo-dialog" aria-labelledby="undo-heading">
+      <h2 id="undo-heading">撤销本次压缩？</h2>
+      <p>撤销后会回到上一版摘要，并接上那一版之后的原文。调整阈值或目标容量后再撤销，可以改变下一轮回复后的压缩时机。</p>
+      <div class="summary-actions">
+        <button id="cancel-undo" type="button">取消本次撤销</button>
+        <button id="confirm-undo" type="button">继续本次撤销</button>
+      </div>
+    </dialog>
+    <script type="module" src="/app.js"></script>
+  </body>
+</html>

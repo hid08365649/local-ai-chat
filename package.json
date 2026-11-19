@@ -1,0 +1,10 @@
+{
+  "name": "aaa-companion",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "start": "node --use-env-proxy server/index.mjs",
+    "test": "node server/run-tests.mjs"
+  }
+}
